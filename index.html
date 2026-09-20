@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Розпізнавання дефектів фігур</title>
+<link rel="stylesheet" href="vendor/uPlot.min.css">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<header class="topbar">
+  <h1>Розпізнавання зображень з дефектами</h1>
+  <p class="sub">Сегментація за кумулятивною гістограмою · розпізнавання дефекту нейромережею</p>
+</header>
+
+<main class="layout">  
+  <section class="panel" id="sourcePanel">
+    <div class="tabs" role="tablist">
+      <button class="tab is-active" role="tab" data-tab="draw">Малювання</button>
+      <button class="tab" role="tab" data-tab="upload">Завантаження</button>
+      <button class="tab" role="tab" data-tab="library">Бібліотека img/</button>
+    </div>
+
+    
+    <div class="tabpane is-active" data-pane="draw">
+      <div class="toolbar">
+        <label>Інструмент
+          <select id="tool">
+            <option value="brush">Пензель (дефект)</option>
+            <option value="eraser">Гумка</option>
+            <option value="select">Вибір і поворот</option>
+            <option value="circle">Круг</option>
+            <option value="ellipse">Овал</option>
+            <option value="square">Квадрат</option>
+            <option value="rectangle">Прямокутник</option>
+            <option value="triangle">Трикутник</option>
+            <option value="pentagon">Пʼятикутник</option>
+            <option value="hexagon">Шестикутник</option>
+          </select>
+        </label>
+        <label>Товщина <input type="range" id="brushSize" min="4" max="60" value="18"></label>
+        <button class="btn" id="clearCanvas">Очистити</button>
+        <button class="btn" id="demoClean">Приклад: без дефекту</button>
+        <button class="btn" id="demoDefect">Приклад: з дефектом</button>
+      </div>
+      <canvas id="draw" width="360" height="360"></canvas>
+      <p class="hint">Фігури малюються протяжкою від центру: довжина задає розмір, напрямок — поворот (кут прилипає до 15°, з Shift вільний). Інструментом «Вибір і поворот» готову фігуру можна посунути, змасштабувати, докрутити ручкою або видалити клавішею Delete. Пензлем домалюйте невеликий «висячий» наріст — це і є дефект, гумкою зайве можна стерти.</p>
+    </div>
+
+    
+    <div class="tabpane" data-pane="upload">
+      <label class="dropzone" id="dropzone">
+        <input type="file" id="fileInput" accept="image/*" hidden>
+        <span>Перетягніть файл сюди або натисніть для вибору</span>
+      </label>
+      <canvas id="uploadPreview" class="preview-canvas" width="360" height="360"></canvas>
+    </div>
+
+    
+    <div class="tabpane" data-pane="library">
+      <div class="toolbar">
+        <button class="btn" id="generateSamples">Згенерувати зразки</button>
+        <span class="hint" id="libraryStatus"></span>
+      </div>
+      <div class="gallery" id="gallery"></div>
+      <p class="hint">Кладіть або видаляйте файли прямо в папці <code>img/</code> поруч з <code>index.html</code> - застосунок читає її вміст</p>
+    </div>
+  </section>
+
+  
+  <section class="panel" id="resultPanel">
+    <div class="toolbar">
+      <button class="btn btn-primary" id="process">Сегментувати і розпізнати</button>
+    </div>
+
+    <details class="params">
+      <summary>Параметри алгоритму</summary>
+      <div class="params-grid">
+        
+        <label>Модель розпізнавання
+          <select id="pModel">
+            <option value="models/defect.onnx">Мʼякша</option>
+            <option value="models/defect_quant.onnx">Мʼякша, квантована</option>
+            <option value="models/defect_strict.onnx">Строга</option>
+            <option value="models/defect_strict_quant.onnx">Строга, квантована</option>
+          </select>
+        </label>
+        <label>Обʼєкт на зображенні
+          <select id="pTarget">
+            <option value="auto">Визначити автоматично</option>
+            <option value="dark">Темний на світлому</option>
+            <option value="light">Світлий на темному</option>
+          </select>
+        </label>
+        <label>
+          <input type="hidden" id="pProminence" min="0" max="0.05" step="0.0005" value="0.002"></label>
+        <label >
+          <input type="hidden" id="pSize" min="32" max="512" step="32" value="128"></label>
+      </div>
+    </details>
+
+    <div id="verdict" class="verdict verdict-idle">Зображення не проаналізовано</div>
+
+    <div class="previews">
+      <figure>
+        <canvas id="maskPreview" width="128" height="128"></canvas>
+        <figcaption>Сегментована маска - вхід нейромережі</figcaption>
+      </figure>
+    </div>
+
+    <div class="viz-root">
+      <h2 class="chart-title">Кумулятивна гістограма та ідеальна кумулятивна гістограма</h2>
+      <div id="chartCumulative" class="chart-host"></div>
+    </div>
+
+    <div class="viz-root">
+      <h2 class="chart-title">Різниця D(s) із позначенням екстремумів</h2>
+      <div id="chartDifference" class="chart-host"></div>
+      <p class="chart-note" id="chartNote">Криві зʼявляться після розпізнавання.</p>
+    </div>
+
+    <table class="metrics" id="metrics"><tbody></tbody></table>
+  </section>
+</main>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

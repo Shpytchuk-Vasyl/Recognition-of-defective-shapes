@@ -1,0 +1,370 @@
+:root {
+  color-scheme: light;
+  --bg: #f6f6f4;
+  --surface-1: #fcfcfb;
+  --border: #d9d8d2;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #85847d;
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --good: #1baf7a;
+  --bad: #e34948;
+  --grid: #e6e5e0;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #131312;
+    --surface-1: #1a1a19;
+    --border: #35342f;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #8d8c83;
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --good: #199e70;
+    --bad: #e66767;
+    --grid: #2a2a27;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text-primary);
+  font: 14px/1.5 system-ui, "Segoe UI", sans-serif;
+}
+
+.topbar {
+  padding: 20px 16px 8px;
+}
+
+.topbar h1 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.sub {
+  margin: 4px 0 0;
+  color: var(--text-secondary);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(360px, 420px) minmax(0, 1fr);
+  gap: 16px;
+  padding: 16px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.panel {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 12px;
+}
+
+.tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 8px 12px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font: inherit;
+}
+
+.tab.is-active {
+  color: var(--text-primary);
+  border-bottom-color: var(--series-1);
+}
+
+.tabpane {
+  display: none;
+  /* justify-items: center; */
+}
+
+.tabpane.is-active {
+  display: block;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.toolbar label {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  color: var(--text-secondary);
+}
+
+select,
+input[type="number"] {
+  font: inherit;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-primary);
+}
+
+input[type="number"] {
+  width: 84px;
+}
+
+.btn {
+  font: inherit;
+  padding: 6px 12px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-primary);
+}
+
+.btn:hover:not(:disabled) {
+  border-color: var(--series-1);
+}
+
+.btn:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--series-1);
+  border-color: var(--series-1);
+  color: #fff;
+}
+
+/* Fabric сам обгортає полотно у .canvas-container */
+.canvas-container {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  touch-action: none;
+  max-width: 100%;
+}
+
+.preview-canvas {
+  width: 100%;
+  max-width: 360px;
+  aspect-ratio: 1;
+  display: block;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  justify-self: center;
+}
+
+.hint {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin: 8px 0 0;
+}
+
+.dropzone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 84px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  text-align: center;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  color: var(--text-secondary);
+}
+
+.dropzone.is-over {
+  border-color: var(--series-1);
+  color: var(--text-primary);
+}
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 8px;
+}
+
+.gallery figure {
+  margin: 0;
+  cursor: pointer;
+  text-align: center;
+}
+
+.gallery img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: contain;
+  background: #fff;
+  border: 2px solid var(--border);
+  border-radius: 6px;
+}
+
+.gallery figure.is-selected img {
+  border-color: var(--series-1);
+}
+
+.gallery figcaption {
+  font-size: 11px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.params {
+  margin-bottom: 10px;
+  color: var(--text-secondary);
+}
+
+.params summary {
+  cursor: pointer;
+}
+
+.params-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 8px;
+  padding-top: 8px;
+}
+
+.params-grid label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.verdict {
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  margin-bottom: 12px;
+}
+
+.verdict-idle {
+  color: var(--text-secondary);
+}
+
+.verdict-ok {
+  border-color: var(--good);
+  color: var(--good);
+}
+
+.verdict-bad {
+  border-color: var(--bad);
+  color: var(--bad);
+}
+
+.previews {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.previews figure {
+  margin: 0;
+  text-align: center;
+}
+
+.previews canvas {
+  width: 128px;
+  height: 128px;
+  image-rendering: pixelated;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.previews figcaption {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.metrics {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.metrics td {
+  padding: 5px 8px;
+  border-top: 1px solid var(--border);
+}
+
+.metrics td:first-child {
+  color: var(--text-secondary);
+}
+
+.metrics td:last-child {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.viz-root {
+  margin-bottom: 14px;
+}
+
+.chart-title {
+  font-size: 14px;
+  margin: 0 0 6px;
+}
+
+.chart-note {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 4px 0 0;
+}
+
+.chart-host {
+  min-height: 260px;
+}
+
+/* uPlot: легенда й курсор у темах застосунку */
+.u-legend {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.u-legend .u-marker {
+  border-radius: 2px;
+}
+
+.u-select {
+  background: rgb(42 120 214 / .12);
+}
+
+.u-cursor-pt {
+  box-shadow: 0 0 0 2px var(--surface-1);
+}
