@@ -1,12 +1,14 @@
 import { maskToCanvas } from '../core/imageUtils.js';
 
 export class ResultView {
-  constructor({ verdict, preview, metrics, charts, chartNote }) {
+  constructor({ verdict, preview, metrics, charts, chartNote, maskCaption, onPickLevel }) {
     this.verdict = verdict;
     this.preview = preview;
     this.metrics = metrics;
     this.charts = charts;          // { cumulative, difference }
     this.chartNote = chartNote;
+    this.maskCaption = maskCaption;
+    this.onPickLevel = onPickLevel;
     this.rows = {};
   }
 
@@ -16,7 +18,9 @@ export class ResultView {
   }
 
   showSegmentation(segmentation) {
-    maskToCanvas(segmentation.mask, segmentation.size, segmentation.size, this.preview);
+    const { size } = segmentation;
+    maskToCanvas(segmentation.mask, size, size, this.preview);
+    if (this.maskCaption) this.maskCaption.textContent = `Сегментована маска, ${size} × ${size}`;
     this.showCurves(segmentation.curves);
     this.rows = { ...segmentation.metrics };
     this.showMetrics(this.rows);
@@ -48,9 +52,9 @@ export class ResultView {
       ],
     });
 
-    const kept = extrema.filter(point => !point.ignored && !point.selected);
-    const dropped = extrema.filter(point => point.ignored);
-    const selected = extrema.filter(point => point.selected);
+    const kept = extrema.filter(point => !point.ignored && point.s !== sOpt);
+    const dropped = extrema.filter(point => point.ignored && point.s !== sOpt);
+    const selected = [{ s: sOpt, value: difference[sOpt] }];
 
     this.charts.difference.show({
       x: levels,
@@ -58,6 +62,7 @@ export class ResultView {
       yLabel: 'D(s) = V_F − V_FG',
       zeroLine: true,
       verticals: [sOpt],
+      onPick: value => this.onPickLevel?.(value),
       series: [
         { label: 'D(s)', values: Array.from(difference), color: color('--series-1') },
         ...markerSeries('Екстремуми', kept, levels.length, color('--series-2')),
@@ -68,7 +73,8 @@ export class ResultView {
 
     this.chartNote.textContent =
       `Обраний поріг яскравості ${sOpt}; знайдено ${extrema.length} екстремумів, `
-      + `${dropped.length} відкинуто як крайові.`;
+      + `${extrema.filter(point => point.ignored).length} відкинуто як крайові. `
+      + 'Клацніть по графіку, щоб узяти за поріг будь-яку точку кривої.';
   }
 
   showMetrics(rows) {

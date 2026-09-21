@@ -6,7 +6,8 @@ import uPlot from '../../vendor/uPlot.esm.js';
  * spec = {
  *   x, xLabel, yLabel, yRange, height,
  *   series: [{ label, color, dash?, points?, size? }] - points - лише маркери без лінії,
- *   zeroLine, verticals: [числа по осі X]
+ *   zeroLine, verticals: [числа по осі X],
+ *   onPick(x) - якщо задано, по кліку віддає значення X у найближчій точці
  * }
  */
 export class Chart {
@@ -66,6 +67,19 @@ export class Chart {
       series: [{ label: xLabel }, ...series.map(one => this.seriesOptions(one))],
       plugins: [this.guides(zeroLine, verticals ?? [], ink)],
     }, [x, ...series.map(one => one.values)], this.container);
+
+    this.bindPicking();
+  }
+
+  bindPicking() {
+    const { onPick } = this.spec;
+    if (!onPick) return;
+
+    this.plot.over.style.cursor = 'pointer';
+    this.plot.over.addEventListener('click', () => {
+      const index = this.plot.cursor.idx;
+      if (index != null) onPick(this.plot.data[0][index]);
+    });
   }
 
   seriesOptions({ label, color, dash, points, size = 9 }) {

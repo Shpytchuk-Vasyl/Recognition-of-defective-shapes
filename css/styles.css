@@ -298,8 +298,9 @@ input[type="number"] {
 }
 
 .previews canvas {
-  width: 128px;
-  height: 128px;
+  width: auto;
+  height: auto;
+  max-width: 256px;
   image-rendering: pixelated;
   background: #fff;
   border: 1px solid var(--border);

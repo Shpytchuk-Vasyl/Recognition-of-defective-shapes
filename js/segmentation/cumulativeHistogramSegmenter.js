@@ -4,12 +4,14 @@ export class CumulativeHistogramSegmenter {
     minProminence = 0.002, // мінімальна виразність екстремуму
     significance = 0.3,    // частка від найбільшого |D|, щоб екстремум був вагомим
     target = 'auto',       // 'dark' | 'light' | 'auto' - де шукати обʼєкт
+    manualLevel = null,    // поріг, заданий вручну; null - шукати автоматично
     size = 128,            // сторона кадру на виході
   } = {}) {
     this.levels = levels;
     this.minProminence = minProminence;
     this.significance = significance;
     this.target = target;
+    this.manualLevel = manualLevel;
     this.size = size;
   }
 
@@ -27,9 +29,13 @@ export class CumulativeHistogramSegmenter {
     const difference = this.difference(vf, vfg);
 
     const extrema = this.markEdgeExtrema(this.findExtrema(difference));
-    const chosen = this.selectExtremum(extrema, target);
+    const manual = this.pickedLevel();
+    const auto = this.selectExtremum(extrema, target);
+    const sOpt = manual ?? (auto ? auto.s : this.medianLevel(vf));
+
+    // поріг міг потрапити і повз екстремуми - тоді просто нема що підсвічувати
+    const chosen = extrema.find(point => point.s === sOpt) ?? null;
     if (chosen) chosen.selected = true;
-    const sOpt = chosen ? chosen.s : this.medianLevel(vf);
 
     const binary = this.threshold(gray, sOpt, target);
     const mask = this.fitToFrame(binary, width, height);
@@ -45,8 +51,11 @@ export class CumulativeHistogramSegmenter {
       curves: { levels: this.levelAxis(), vf, vfg, difference, extrema, sOpt },
       metrics: {
         'Обраний поріг яскравості': sOpt,
-        'Екстремум на цьому порозі': chosen ? (chosen.type === 'max' ? 'максимум' : 'мінімум') : 'не знайдено',
-        'Відхилення від ідеальної кривої': chosen ? chosen.value.toFixed(4) : '-',
+        'Вибір порога': manual === null ? 'автоматично' : 'вручну, по графіку',
+        'Екстремум на цьому порозі': chosen
+          ? (chosen.type === 'max' ? 'максимум' : 'мінімум')
+          : 'не екстремум',
+        'Відхилення від ідеальної кривої': difference[sOpt].toFixed(4),
         'Усього екстремумів': extrema.length,
         'Відкинуто як крайові': extrema.filter(point => point.ignored).length,
         'Обʼєкт': target === 'dark' ? 'темний на світлому' : 'світлий на темному',
@@ -103,7 +112,6 @@ export class CumulativeHistogramSegmenter {
     const found = [];
     const add = (s, type) => found.push({ s, value: d[s], type });
 
-    if (d[0] !== d[1]) add(0, d[0] > d[1] ? 'max' : 'min');
     for (let s = 1; s < last; s++) {
       const prev = d[s - 1], cur = d[s], next = d[s + 1];
       if (cur > prev && cur >= next) add(s, 'max');
@@ -135,6 +143,12 @@ export class CumulativeHistogramSegmenter {
     if (first && first.type === 'min') first.ignored = true;
     if (last && last !== first && last.type === 'max') last.ignored = true;
     return marked;
+  }
+
+  pickedLevel() {
+    if (!Number.isFinite(this.manualLevel)) return null;
+    const level = Math.round(this.manualLevel);
+    return Math.min(this.levels - 1, Math.max(0, level));
   }
 
   selectExtremum(extrema, target) {

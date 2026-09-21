@@ -3,10 +3,12 @@ import { maskToCanvas } from '../core/imageUtils.js';
 const ORT_URL = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.min.js';
 
 export class OnnxDefectClassifier {
-  constructor({ modelUrl = 'models/defect.onnx', input = 128, decision = 0.8 } = {}) {
+  constructor({ modelUrl = 'models/defect.onnx', input = 128, decision = 0.8, canvas = null } = {}) {
     this.modelUrl = modelUrl;
     this.input = input;
     this.decision = decision;
+    // полотно з розмітки: воно ж показує користувачу те, що бачить модель
+    this.canvas = canvas ?? document.createElement('canvas');
     this.session = null;
   }
 
@@ -49,7 +51,17 @@ export class OnnxDefectClassifier {
 
   toTensor(mask, size) {
     const side = this.input;
-    const canvas = document.createElement('canvas');
+
+    if (size === side) {
+      maskToCanvas(mask, size, size, this.canvas);
+      const data = new Float32Array(side * side * 3);
+      for (let i = 0, p = 0; i < mask.length; i++, p += 3) {
+        data[p] = data[p + 1] = data[p + 2] = mask[i] ? 0 : 255;
+      }
+      return new window.ort.Tensor('float32', data, [1, side, side, 3]);
+    }
+
+    const canvas = this.canvas;
     canvas.width = side;
     canvas.height = side;
 
