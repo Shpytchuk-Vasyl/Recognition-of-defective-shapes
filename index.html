@@ -59,7 +59,7 @@
     
     <div class="tabpane" data-pane="library">
       <div class="toolbar">
-        <button class="btn" id="generateSamples">Згенерувати зразки</button>
+        <button style="display: none;" class="btn" id="generateSamples">Згенерувати зразки</button>
         <span class="hint" id="libraryStatus"></span>
       </div>
       <div class="gallery" id="gallery"></div>
@@ -81,8 +81,8 @@
           <select id="pModel">
             <option value="models/defect.onnx">Мʼякша</option>
             <option value="models/defect_quant.onnx">Мʼякша, квантована</option>
-            <option value="models/defect_strict.onnx">Строга</option>
-            <option value="models/defect_strict_quant.onnx">Строга, квантована</option>
+            <option value="models/defect_strict.onnx">Сувора</option>
+            <option value="models/defect_strict_quant.onnx">Сувора, квантована</option>
           </select>
         </label>
         <label>Обʼєкт на зображенні

@@ -300,7 +300,7 @@ input[type="number"] {
 .previews canvas {
   width: auto;
   height: auto;
-  max-width: 256px;
+  max-width: 512px;
   image-rendering: pixelated;
   background: #fff;
   border: 1px solid var(--border);
