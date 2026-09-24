@@ -1,0 +1,28 @@
+{
+  "files": [
+    "circle_blob.png",
+    "circle_bump.png",
+    "circle_clean.png",
+    "circle_line.png",
+    "ellipse_blob.png",
+    "ellipse_bump.png",
+    "ellipse_clean.png",
+    "ellipse_line.png",
+    "hexagon_blob.png",
+    "hexagon_bump.png",
+    "hexagon_clean.png",
+    "hexagon_line.png",
+    "pentagon_blob.png",
+    "pentagon_bump.png",
+    "pentagon_clean.png",
+    "pentagon_line.png",
+    "rectangle_blob.png",
+    "rectangle_bump.png",
+    "rectangle_clean.png",
+    "rectangle_line.png",
+    "square_blob.png",
+    "square_bump.png",
+    "square_clean.png",
+    "square_line.png"
+  ]
+}

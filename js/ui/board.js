@@ -2,29 +2,26 @@ import {
   Canvas, Circle, Ellipse, Rect, Triangle, Polygon, Line, PencilBrush,
 } from '../../vendor/fabric.min.mjs';
 
-const INK = '#000';
+const INK = '#000';          
 const PAPER = '#fff';
-const SNAP = 15;          // крок прилипання кута, градуси
-const MIN_RADIUS = 3;     // коротший штрих вважаємо промахом
+const SNAP = 15;          
+const MIN_RADIUS = 3;     
 
-/**
- * Кожна фігура будується з одиничним розміром, а протяжка задає їй
- * радіус і поворот, тож resize() однаково працює для всіх.
- */
 const SHAPES = {
-  circle: p => new Circle({ ...base(p), radius: 1 }),
-  ellipse: p => new Ellipse({ ...base(p), rx: 1, ry: 0.62 }),
-  square: p => new Rect({ ...base(p), width: Math.SQRT2, height: Math.SQRT2 }),
-  rectangle: p => new Rect({ ...base(p), width: Math.SQRT2, height: Math.SQRT2 * 0.6 }),
-  triangle: p => new Triangle({ ...base(p), width: 1.8, height: 1.8 }),
-  pentagon: p => new Polygon(regularPoints(5), base(p)),
-  hexagon: p => new Polygon(regularPoints(6), base(p)),
+  circle: (p, ink) => new Circle({ ...base(p, ink), radius: 1 }),
+  ellipse: (p, ink) => new Ellipse({ ...base(p, ink), rx: 1, ry: 0.62 }),
+  square: (p, ink) => new Rect({ ...base(p, ink), width: Math.SQRT2, height: Math.SQRT2 }),
+  rectangle: (p, ink) => new Rect({ ...base(p, ink), width: Math.SQRT2, height: Math.SQRT2 * 0.6 }),
+  triangle: (p, ink) => new Triangle({ ...base(p, ink), width: 1.8, height: 1.8 }),
+  pentagon: (p, ink) => new Polygon(regularPoints(5), base(p, ink)),
+  hexagon: (p, ink) => new Polygon(regularPoints(6), base(p, ink)),
 };
 
 export class Board {
-  constructor(el, { tool = () => 'brush', brushSize = () => 18 } = {}) {
+  constructor(el, { tool = () => 'brush', brushSize = () => 18, color = () => INK } = {}) {
     this.getTool = tool;
     this.getBrushSize = brushSize;
+    this.getColor = color;
 
     this.canvas = new Canvas(el, { backgroundColor: PAPER, selection: false });
     this.canvas.freeDrawingBrush = new PencilBrush(this.canvas);
@@ -52,7 +49,7 @@ export class Board {
       object.evented = selecting;
     });
     if (painting) {
-      this.canvas.freeDrawingBrush.color = tool === 'eraser' ? PAPER : INK;
+      this.canvas.freeDrawingBrush.color = tool === 'eraser' ? PAPER : this.getColor();
       this.canvas.freeDrawingBrush.width = this.getBrushSize();
     }
     if (!selecting) this.canvas.discardActiveObject();
@@ -63,7 +60,7 @@ export class Board {
     const create = SHAPES[this.getTool()];
     if (!create) return;
     this.origin = this.canvas.getScenePoint(e.e);
-    this.draft = create(this.origin);
+    this.draft = create(this.origin, this.getColor());
     this.canvas.add(this.draft);
   }
 
@@ -93,7 +90,6 @@ export class Board {
     this.canvas.requestRenderAll();
   }
 
-  /** Видаляє виділене; повертає true, якщо було що видаляти. */
   deleteSelection() {
     const active = this.canvas.getActiveObjects();
     if (!active.length) return false;
@@ -119,7 +115,8 @@ export class Board {
     this.clear();
     const c = this.canvas.width / 2;
     const R = this.canvas.width * 0.28;
-    this.canvas.add(new Circle({ ...base({ x: c, y: c }), radius: R }));
+    const ink = this.getColor();
+    this.canvas.add(new Circle({ ...base({ x: c, y: c }, ink), radius: R }));
 
     if (withDefect) {
       const angle = -Math.PI / 5;
@@ -128,18 +125,18 @@ export class Board {
       const by = c + Math.sin(angle) * (R + blobR * 1.8);
       this.canvas.add(new Line(
         [c + Math.cos(angle) * R * 0.98, c + Math.sin(angle) * R * 0.98, bx, by],
-        { stroke: INK, strokeWidth: blobR * 0.32, strokeLineCap: 'round' },
+        { stroke: ink, strokeWidth: blobR * 0.32, strokeLineCap: 'round' },
       ));
-      this.canvas.add(new Circle({ ...base({ x: bx, y: by }), radius: blobR }));
+      this.canvas.add(new Circle({ ...base({ x: bx, y: by }, ink), radius: blobR }));
     }
     this.canvas.requestRenderAll();
   }
 }
 
-function base(p) {
+function base(p, ink = INK) {
   return {
     originX: 'center', originY: 'center', left: p.x, top: p.y,
-    fill: INK, selectable: false, evented: false,
+    fill: ink, selectable: false, evented: false,
   };
 }
 

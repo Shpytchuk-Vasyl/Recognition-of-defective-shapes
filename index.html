@@ -38,6 +38,7 @@
             <option value="hexagon">Шестикутник</option>
           </select>
         </label>
+        <label>Колір <input type="color" id="inkColor" value="#000000"></label>
         <label>Товщина <input type="range" id="brushSize" min="4" max="60" value="18"></label>
         <button class="btn" id="clearCanvas">Очистити</button>
         <button class="btn" id="demoClean">Приклад: без дефекту</button>
@@ -82,7 +83,7 @@
             <option value="models/defect.onnx">Мʼякша</option>
             <option value="models/defect_quant.onnx">Мʼякша, квантована</option>
             <option value="models/defect_strict.onnx">Сувора</option>
-            <option value="models/defect_strict_quant.onnx">Сувора, квантована</option>
+            <option selected value="models/defect_strict_quant.onnx">Сувора, квантована</option>
           </select>
         </label>
         <label>Обʼєкт на зображенні

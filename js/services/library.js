@@ -4,10 +4,25 @@ export async function listImages(dir = 'img/') {
   const api = await readApi();
   if (api) return { files: api, source: 'serve.py' };
 
+  const manifest = await readManifest(dir);
+  if (manifest) return { files: manifest, source: 'index.json' };
+
   const index = await readDirectoryIndex(dir);
   if (index) return { files: index, source: 'листинг каталогу' };
 
   return { files: [], source: null };
+}
+
+async function readManifest(dir) {
+  try {
+    const res = await fetch(dir + 'index.json', { cache: 'no-store' });
+    if (!res.ok) return null;
+    const json = await res.json();
+    const files = (json.files || []).filter(name => IMAGE_RE.test(name));
+    return files.length ? files : null;
+  } catch {
+    return null;
+  }
 }
 
 async function readApi() {

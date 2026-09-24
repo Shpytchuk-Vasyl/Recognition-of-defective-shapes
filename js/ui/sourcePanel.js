@@ -12,6 +12,7 @@ export class SourcePanel {
 
     this.board = new Board(root.querySelector('#draw'), {
       tool: () => root.querySelector('#tool').value,
+      color: () => root.querySelector('#inkColor').value,
       brushSize,
     });
 
@@ -73,6 +74,7 @@ export class SourcePanel {
     const q = sel => this.root.querySelector(sel);
     q('#tool').addEventListener('change', () => this.board.syncTool());
     q('#brushSize').addEventListener('input', () => this.board.syncTool());
+    q('#inkColor').addEventListener('input', () => this.board.syncTool());
     q('#clearCanvas').addEventListener('click', () => this.board.clear());
     q('#demoClean').addEventListener('click', () => this.board.demo(false));
     q('#demoDefect').addEventListener('click', () => this.board.demo(true));
