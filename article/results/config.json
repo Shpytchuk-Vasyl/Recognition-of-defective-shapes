@@ -1,0 +1,111 @@
+{
+ "compositions": {
+  "L": {
+   "types": [
+    "line"
+   ]
+  },
+  "B": {
+   "types": [
+    "bump"
+   ]
+  },
+  "D": {
+   "types": [
+    "dent"
+   ]
+  },
+  "M": {
+   "types": [
+    "line",
+    "blob"
+   ]
+  },
+  "S": {
+   "types": [
+    "line",
+    "bump",
+    "blob"
+   ]
+  },
+  "A": {
+   "types": [
+    "line",
+    "bump",
+    "blob",
+    "slit",
+    "dent"
+   ]
+  },
+  "T05": {
+   "tolerance": 0.05
+  },
+  "T10": {
+   "tolerance": 0.1
+  },
+  "T15": {
+   "tolerance": 0.15
+  }
+ },
+ "seeds": [
+  0,
+  1,
+  2
+ ],
+ "n_samples": 6000,
+ "epochs": [
+  20,
+  8
+ ],
+ "train_ranges": {
+  "line": [
+   0.35,
+   0.7
+  ],
+  "bump": [
+   0.12,
+   0.22
+  ],
+  "blob": [
+   0.46,
+   0.77
+  ],
+  "slit": [
+   0.2,
+   0.45
+  ],
+  "dent": [
+   0.12,
+   0.22
+  ]
+ },
+ "grid_h": [
+  0.02,
+  0.03,
+  0.05,
+  0.07,
+  0.1,
+  0.14,
+  0.2,
+  0.28,
+  0.4
+ ],
+ "blob_h": [
+  0.2,
+  0.28,
+  0.4
+ ],
+ "grid_eps": [
+  0.01,
+  0.02,
+  0.03,
+  0.05,
+  0.08
+ ],
+ "suite": {
+  "per_shape_clean": 200,
+  "per_cell": 120,
+  "per_eps": 600
+ },
+ "n_calib": 1200
+}

@@ -1,0 +1,4 @@
+article/results/models/
+__pycache__/
+article/real/*.png
+article/results/real_masks/
