@@ -3,8 +3,11 @@ import { maskToCanvas } from '../core/imageUtils.js';
 const ORT_URL = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.min.js';
 
 export class OnnxDefectClassifier {
-  constructor({ modelUrl = 'models/defect.onnx', input = 128, decision = 0.8, canvas = null } = {}) {
+  constructor({
+    modelUrl = 'models/T10_tolerance.onnx', label = modelUrl, input = 128, decision = 0.5, canvas = null,
+  } = {}) {
     this.modelUrl = modelUrl;
+    this.label = label;
     this.input = input;
     this.decision = decision;
     // полотно з розмітки: воно ж показує користувачу те, що бачить модель

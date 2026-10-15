@@ -1,13 +1,14 @@
 import { maskToCanvas } from '../core/imageUtils.js';
 
 export class ResultView {
-  constructor({ verdict, preview, metrics, charts, chartNote, maskCaption, onPickLevel }) {
+  constructor({ verdict, preview, metrics, charts, chartNote, maskCaption, directNote, onPickLevel }) {
     this.verdict = verdict;
     this.preview = preview;
     this.metrics = metrics;
     this.charts = charts;          // { cumulative, difference }
     this.chartNote = chartNote;
     this.maskCaption = maskCaption;
+    this.directNote = directNote;  // пояснення, що малюнок з редактора йде в модель напряму
     this.onPickLevel = onPickLevel;
     this.rows = {};
   }
@@ -18,10 +19,15 @@ export class ResultView {
   }
 
   showSegmentation(segmentation) {
-    const { size } = segmentation;
-    maskToCanvas(segmentation.mask, size, size, this.preview);
-    if (this.maskCaption) this.maskCaption.textContent = `Сегментована маска, ${size} × ${size}`;
-    this.showCurves(segmentation.curves);
+    const { binary, width, height, direct = false } = segmentation;
+    maskToCanvas(binary, width, height, this.preview);
+    if (this.maskCaption) {
+      this.maskCaption.textContent = direct
+        ? `Силует з редактора, ${width} × ${height}`
+        : `Маска після сегментації, ${width} × ${height}`;
+    }
+    if (this.directNote) this.directNote.hidden = !direct;
+    this.showCurves(segmentation.curves, direct);
     this.rows = { ...segmentation.metrics };
     this.showMetrics(this.rows);
   }
@@ -29,14 +35,14 @@ export class ResultView {
   showClassification(classification) {
 
     this.setVerdict(classification.defect ? 'bad' : 'ok', (classification.defect
-      ? 'Зображення З ДЕФЕКТОМ: нейромережа виявила зайву поверхню'
-      : 'Зображення БЕЗ ДЕФЕКТУ: суцільна фігура')
+      ? 'Фігура З ДЕФЕКТОМ: нейромережа виявила відхилення контуру'
+      : 'Фігура БЕЗ ДЕФЕКТУ: відхилень контуру не виявлено')
       + ` (ймовірність дефекту ${(classification.probability * 100).toFixed(1)} %)`);
     this.rows = { ...this.rows, ...classification.metrics };
     this.showMetrics(this.rows);
   }
 
-  showCurves(curves) {
+  showCurves(curves, direct = false) {
     const { levels, vf, vfg, difference, extrema, sOpt } = curves;
     const color = name => getComputedStyle(this.verdict).getPropertyValue(name).trim();
 
@@ -71,10 +77,13 @@ export class ResultView {
       ],
     });
 
-    this.chartNote.textContent =
-      `Обраний поріг яскравості ${sOpt}; знайдено ${extrema.length} екстремумів, `
-      + `${extrema.filter(point => point.ignored).length} відкинуто як крайові. `
-      + 'Клацніть по графіку, щоб узяти за поріг будь-яку точку кривої.';
+    const found = `знайдено ${extrema.length} екстремумів, `
+      + `${extrema.filter(point => point.ignored).length} відкинуто як крайові. `;
+    this.chartNote.textContent = direct
+      ? `Приклад: метод обрав би поріг яскравості ${sOpt}; ${found}`
+        + 'На вхід нейромережі ці криві не впливають, клацання по графіку переносить поріг лише в прикладі.'
+      : `Обраний поріг яскравості ${sOpt}; ${found}`
+        + 'Клацніть по графіку, щоб узяти за поріг будь-яку точку кривої.';
   }
 
   showMetrics(rows) {

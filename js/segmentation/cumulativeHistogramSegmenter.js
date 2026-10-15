@@ -5,13 +5,15 @@ export class CumulativeHistogramSegmenter {
     significance = 0.3,    // частка від найбільшого |D|, щоб екстремум був вагомим
     target = 'auto',       // 'dark' | 'light' | 'auto' - де шукати обʼєкт
     manualLevel = null,    // поріг, заданий вручну; null - шукати автоматично
-    size = 128,            // сторона кадру на виході
+    cleanup = true,        // постобробка маски для фото
+    size = 128,            // сторона кадру на виході - вхід нейромережі
   } = {}) {
     this.levels = levels;
     this.minProminence = minProminence;
     this.significance = significance;
     this.target = target;
     this.manualLevel = manualLevel;
+    this.cleanup = cleanup;
     this.size = size;
   }
 
@@ -19,6 +21,42 @@ export class CumulativeHistogramSegmenter {
 
 
   segment(imageData) {
+    const { width, height } = imageData;
+    const analysis = this.analyze(imageData);
+    const { gray, target, curves, sOpt, chosen, manual } = analysis;
+
+    const thresholded = this.threshold(gray, sOpt, target);
+    const binary = this.cleanup ? this.mainObject(thresholded, width, height) : thresholded;
+    const mask = this.fitToFrame(binary, width, height);
+    if (!mask) throw new Error('Після сегментації не лишилося жодного пікселя фігури.');
+
+    return {
+      mask,
+      size: this.size,
+      binary,
+      width,
+      height,
+      sOpt,
+      target,
+      curves,
+      metrics: {
+        'Обраний поріг яскравості': sOpt,
+        'Вибір порога': manual === null ? 'автоматично' : 'вручну, по графіку',
+        'Екстремум на цьому порозі': chosen
+          ? (chosen.type === 'max' ? 'максимум' : 'мінімум')
+          : 'не екстремум',
+        'Відхилення від ідеальної кривої': curves.difference[sOpt].toFixed(4),
+        'Усього екстремумів': curves.extrema.length,
+        'Відкинуто як крайові': curves.extrema.filter(point => point.ignored).length,
+        'Обʼєкт': target === 'dark' ? 'темний на світлому' : 'світлий на темному',
+        'Постобробка маски': this.cleanup ? 'так' : 'ні',
+        ...this.frameMetrics(mask),
+      },
+    };
+  }
+
+  /** Криві методу й обраний поріг - без бінаризації. */
+  analyze(imageData) {
     const { width, height } = imageData;
     const gray = this.toGray(imageData);
     const target = this.resolveTarget(gray, width, height);
@@ -37,32 +75,18 @@ export class CumulativeHistogramSegmenter {
     const chosen = extrema.find(point => point.s === sOpt) ?? null;
     if (chosen) chosen.selected = true;
 
-    const binary = this.threshold(gray, sOpt, target);
-    const mask = this.fitToFrame(binary, width, height);
-    if (!mask) throw new Error('Після сегментації не лишилося жодного пікселя фігури.');
-
-    const figureArea = this.area(mask);
-
     return {
-      mask,
-      size: this.size,
-      sOpt,
-      target,
+      gray, target, sOpt, chosen, manual,
       curves: { levels: this.levelAxis(), vf, vfg, difference, extrema, sOpt },
-      metrics: {
-        'Обраний поріг яскравості': sOpt,
-        'Вибір порога': manual === null ? 'автоматично' : 'вручну, по графіку',
-        'Екстремум на цьому порозі': chosen
-          ? (chosen.type === 'max' ? 'максимум' : 'мінімум')
-          : 'не екстремум',
-        'Відхилення від ідеальної кривої': difference[sOpt].toFixed(4),
-        'Усього екстремумів': extrema.length,
-        'Відкинуто як крайові': extrema.filter(point => point.ignored).length,
-        'Обʼєкт': target === 'dark' ? 'темний на світлому' : 'світлий на темному',
-        'Розмір кадру': `${this.size} × ${this.size}`,
-        'Площа фігури, px': figureArea,
-        'Заповнення кадру': (figureArea / (this.size * this.size) * 100).toFixed(2) + ' %',
-      },
+    };
+  }
+
+  frameMetrics(mask) {
+    const figureArea = this.area(mask);
+    return {
+      'Розмір кадру': `${this.size} × ${this.size}`,
+      'Площа фігури, px': figureArea,
+      'Заповнення кадру': (figureArea / (this.size * this.size) * 100).toFixed(2) + ' %',
     };
   }
 
@@ -182,6 +206,68 @@ export class CumulativeHistogramSegmenter {
       mask[i] = (target === 'dark' ? gray[i] <= sOpt : gray[i] > sOpt) ? 1 : 0;
     }
     return mask;
+  }
+
+  /**
+   * Постобробка для фото: на нерівно освітленому папері поріг лягає на початок моди
+   * паперу, і темніші ділянки та шум потрапляють у маску. Лишаємо найбільшу
+   * 8-зв'язну область, що не торкається краю кадру, і заповнюємо в ній порожнини.
+   */
+  mainObject(mask, w, h) {
+    const labels = new Int32Array(mask.length);
+    const sizes = [0];
+    const touchesEdge = [false];
+    const stack = [];
+
+    for (let start = 0; start < mask.length; start++) {
+      if (!mask[start] || labels[start]) continue;
+      const label = sizes.length;
+      let size = 0, edge = false;
+      labels[start] = label;
+      stack.push(start);
+      while (stack.length) {
+        const i = stack.pop();
+        const x = i % w, y = (i - x) / w;
+        size++;
+        if (x === 0 || y === 0 || x === w - 1 || y === h - 1) edge = true;
+        for (let ny = Math.max(0, y - 1); ny <= Math.min(h - 1, y + 1); ny++) {
+          for (let nx = Math.max(0, x - 1); nx <= Math.min(w - 1, x + 1); nx++) {
+            const j = ny * w + nx;
+            if (mask[j] && !labels[j]) { labels[j] = label; stack.push(j); }
+          }
+        }
+      }
+      sizes.push(size);
+      touchesEdge.push(edge);
+    }
+    if (sizes.length === 1) return mask;
+
+    const largest = allowEdge => {
+      let best = 0;
+      for (let label = 1; label < sizes.length; label++) {
+        if ((allowEdge || !touchesEdge[label]) && sizes[label] > sizes[best]) best = label;
+      }
+      return best;
+    };
+    // фігура на весь кадр торкається краю - тоді беремо просто найбільшу область
+    const keep = largest(false) || largest(true);
+
+    // фон, досяжний від краю кадру (4-зв'язність), лишається фоном; решта - фігура з порожнинами
+    const out = new Uint8Array(mask.length).fill(1);
+    const visit = i => {
+      if (out[i] && labels[i] !== keep) { out[i] = 0; stack.push(i); }
+    };
+    for (let x = 0; x < w; x++) { visit(x); visit((h - 1) * w + x); }
+    for (let y = 0; y < h; y++) { visit(y * w); visit(y * w + w - 1); }
+    while (stack.length) {
+      const i = stack.pop();
+      const x = i % w;
+      if (x > 0) visit(i - 1);
+      if (x < w - 1) visit(i + 1);
+      if (i >= w) visit(i - w);
+      if (i + w < mask.length) visit(i + w);
+    }
+    return out;
   }
 
   fitToFrame(mask, w, h) {

@@ -2,6 +2,7 @@ import { SourcePanel } from './ui/sourcePanel.js';
 import { Chart } from './ui/chart.js';
 import { ResultView } from './ui/resultView.js';
 import { CumulativeHistogramSegmenter } from './segmentation/cumulativeHistogramSegmenter.js';
+import { DrawnSilhouette } from './segmentation/drawnSilhouette.js';
 import { OnnxDefectClassifier } from './classifiers/onnxClassifier.js';
 import { toImageData } from './core/imageUtils.js';
 
@@ -22,6 +23,7 @@ const view = new ResultView({
   },
   chartNote: $('#chartNote'),
   maskCaption: $('#maskCaption'),
+  directNote: $('#directNote'),
   onPickLevel: level => run(level),
 });
 
@@ -42,13 +44,14 @@ const classifier = () => {
 const segmenter = manualLevel => new CumulativeHistogramSegmenter({
   minProminence: Number($('#pProminence').value),
   target: $('#pTarget').value,
-  size: frameSide(current),
+  cleanup: $('#pCleanup').checked,
   manualLevel,
 });
 
-const MAX_FRAME = 512;
-const frameSide = image =>
-  Math.min(MAX_FRAME, Math.max(128, image.width, image.height));
+// фігура з редактора йде в модель напряму, фото й файли - через сегментацію
+const prepare = manualLevel => current.drawn
+  ? new DrawnSilhouette({ example: segmenter(manualLevel) })
+  : segmenter(manualLevel);
 
 let current = null;
 
@@ -58,17 +61,17 @@ $('#process').addEventListener('click', () => {
     return view.setVerdict('idle',
       'Немає зображення: намалюйте фігуру, завантажте файл або оберіть із бібліотеки.');
   }
-  current = toImageData(image);
+  current = { image: toImageData(image), drawn: source.fromEditor };
   run(null);
 });
 
 async function run(manualLevel) {
   if (!current) return;
-  view.setVerdict('idle', 'Сегментація…');
+  view.setVerdict('idle', current.drawn ? 'Підготовка силуету…' : 'Сегментація…');
 
   let segmentation;
   try {
-    segmentation = segmenter(manualLevel).segment(current);
+    segmentation = prepare(manualLevel).segment(current.image);
     view.showSegmentation(segmentation);
   } catch (err) {
     return view.setVerdict('idle', 'Сегментація не вдалася: ' + err.message);

@@ -199,6 +199,16 @@ input[type="color"] {
   margin: 8px 0 0;
 }
 
+.notice {
+  margin: 10px 0 12px;
+  padding: 8px 10px;
+  border-left: 3px solid var(--series-1);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
 .dropzone {
   display: flex;
   align-items: center;
@@ -257,20 +267,67 @@ input[type="color"] {
 
 .params summary {
   cursor: pointer;
+  font-weight: 600;
 }
 
-.params-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 8px;
-  padding-top: 8px;
-}
-
-.params-grid label {
+.params-list {
   display: flex;
+  flex-direction: column;
+  max-width: 560px;
+  padding-top: 4px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 0;
+}
+
+.field + .field {
+  border-top: 1px solid var(--border);
+}
+
+.field-label {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.field select {
+  width: 100%;
+  max-width: 360px;
+  padding: 6px 8px;
+}
+
+.field-check {
+  display: inline-flex;
   gap: 8px;
   align-items: center;
-  justify-content: space-between;
+  color: var(--text-primary);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.field-check input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--series-1);
+}
+
+.field-help {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+ul.field-help {
+  padding-left: 18px;
+}
+
+.field-help li + li {
+  margin-top: 3px;
 }
 
 .verdict {
@@ -310,7 +367,7 @@ input[type="color"] {
 .previews canvas {
   width: auto;
   height: auto;
-  max-width: 512px;
+  max-width: min(512px, 100%);
   image-rendering: pixelated;
   background: #fff;
   border: 1px solid var(--border);

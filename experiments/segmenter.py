@@ -1,4 +1,4 @@
-"""Порт js/segmentation/cumulativeHistogramSegmenter.js; з cleanup=False збігається з ним піксель у піксель.
+"""Порт js/segmentation/cumulativeHistogramSegmenter.js; збігається з ним піксель у піксель (cleanup теж).
 
 cleanup=True - постобробка маски для фото: найбільша зв'язна область, що не
 торкається краю кадру, із заповненими порожнинами.

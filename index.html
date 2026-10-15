@@ -10,7 +10,7 @@
 <body>
 <header class="topbar">
   <h1>Розпізнавання фігур з дефектами</h1>
-  <p class="sub">Сегментація за кумулятивною гістограмою · розпізнавання дефекту нейромережею</p>
+  <p class="sub">Сегментація фото за кумулятивною гістограмою · виявлення дефекту нейромережею MobileNetV2, навченою на синтетичних силуетах</p>
 </header>
 
 <main class="layout">  
@@ -45,7 +45,8 @@
         <button class="btn" id="demoDefect">Приклад: з дефектом</button>
       </div>
       <canvas id="draw" width="360" height="360"></canvas>
-      <p class="hint">Фігури малюються протяжкою від центру: довжина задає розмір, напрямок — поворот (кут прилипає до 15°, з Shift вільний). Інструментом «Вибір і поворот» готову фігуру можна посунути, змасштабувати, докрутити ручкою або видалити клавішею Delete. Пензлем домалюйте невеликий «висячий» наріст — це і є дефект, гумкою зайве можна стерти.</p>
+      <p class="hint">Фігури малюються протяжкою від центру: довжина задає розмір, напрямок — поворот (кут прилипає до 15°, з Shift вільний). Інструментом «Вибір і поворот» готову фігуру можна посунути, змасштабувати, докрутити ручкою або видалити клавішею Delete. Пензлем домалюйте наріст чи відросток, гумкою виріжте вмʼятину або проріз — це і є дефекти.</p>
+      <p class="notice">Фігура з редактора — це вже готовий силует, як і синтетичні зразки, на яких навчено моделі. Тому сегментація до неї не застосовується: малюнок бінаризується, вписується в кадр 128 × 128 і напряму подається в нейромережу. Кумулятивні гістограми для неї будуються лише як приклад, щоб можна було побачити роботу методу; на результат розпізнавання вони не впливають.</p>
     </div>
 
     
@@ -55,6 +56,7 @@
         <span>Перетягніть файл сюди або натисніть для вибору</span>
       </label>
       <canvas id="uploadPreview" class="preview-canvas" width="360" height="360"></canvas>
+      <p class="hint">Фото проходить увесь конвеєр: сегментація за кумулятивною гістограмою → постобробка маски (лишається найбільша область, що не торкається краю кадру, із заповненими порожнинами) → кадр 128 × 128 → нейромережа. На фото має бути одна фігура з полем навколо.</p>
     </div>
 
     
@@ -76,34 +78,64 @@
 
     <details class="params">
       <summary>Параметри алгоритму</summary>
-      <div class="params-grid">
-        
-        <label>Модель розпізнавання
+      <div class="params-list">
+        <div class="field">
+          <label class="field-label" for="pModel">Модель</label>
           <select id="pModel">
-            <option value="models/defect.onnx">Мʼякша</option>
-            <option value="models/defect_quant.onnx">Мʼякша, квантована</option>
-            <option value="models/defect_strict.onnx">Сувора</option>
-            <option selected value="models/defect_strict_quant.onnx">Сувора, квантована</option>
+            <optgroup label="Один тип дефекту">
+              <option value="models/L_line.onnx">L — лише відросток</option>
+              <option value="models/B_bump.onnx">B — лише наріст-півколо</option>
+              <option value="models/D_dent.onnx">D — лише вмʼятина</option>
+            </optgroup>
+            <optgroup label="Кілька типів дефектів">
+              <option value="models/M_line_blob.onnx">М — відросток і наріст на ніжці</option>
+              <option value="models/S_line_bump_blob.onnx">С — усі нарости</option>
+              <option value="models/A_all_defects.onnx">A — усі пʼять типів</option>
+            </optgroup>
+            <optgroup label="Явний допуск T">
+              <option value="models/T05_tolerance.onnx">T0,05 — допуск 0,05</option>
+              <option selected value="models/T10_tolerance.onnx">T0,10 — допуск 0,10</option>
+              <option value="models/T15_tolerance.onnx">T0,15 — допуск 0,15</option>
+            </optgroup>
           </select>
-        </label>
-        <label>Обʼєкт на зображенні
+          <ul class="field-help">
+            <li>Девʼять моделей MobileNetV2 однакової архітектури — різниться лише склад синтетичного навчального набору.</li>
+            <li>T — допуск: відхилення контуру, менші за T (частка масштабу фігури), вважаються нормою.</li>
+            <li>Для фото фігур, намальованих від руки, найменше хибних тривог дають T0,10, L і М. B, D, С, A і T0,05 відбраковують майже кожну чисту фігуру.</li>
+            <li>Поріг рішення — 0,5.</li>
+          </ul>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="pTarget">Обʼєкт на зображенні</label>
           <select id="pTarget">
             <option value="auto">Визначити автоматично</option>
             <option value="dark">Темний на світлому</option>
             <option value="light">Світлий на темному</option>
           </select>
-        </label>
-        <label>
-          <input type="hidden" id="pProminence" min="0" max="0.05" step="0.0005" value="0.002"></label>
+          <p class="field-help">Автоматично — за середньою яскравістю рамки зображення.</p>
+        </div>
+
+        <div class="field">
+          <label class="field-check">
+            <input type="checkbox" id="pCleanup" checked autocomplete="off">
+            Постобробка маски фото
+          </label>
+          <p class="field-help">Лишає найбільшу область, що не торкається краю кадру, і заповнює в ній порожнини. На малюнок з редактора не впливає.</p>
+        </div>
+
+        <input type="hidden" id="pProminence" value="0.002">
       </div>
     </details>
 
     <div id="verdict" class="verdict verdict-idle">Зображення не проаналізовано</div>
 
+    <p class="notice" id="directNote" hidden>Фігуру з редактора подано в нейромережу напряму, без сегментації. Графіки нижче — лише приклад того, як метод кумулятивної гістограми обробив би цей малюнок.</p>
+
     <div class="previews">
       <figure>
         <canvas id="maskPreview" width="128" height="128"></canvas>
-        <figcaption id="maskCaption">Сегментована маска</figcaption>
+        <figcaption id="maskCaption">Маска</figcaption>
       </figure>
       <figure>
         <canvas id="modelPreview" width="128" height="128"></canvas>

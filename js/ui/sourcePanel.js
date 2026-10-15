@@ -64,6 +64,8 @@ export class SourcePanel {
     }
   }
 
+  get fromEditor() { return this.tabs.current === 'draw'; }
+
   current() {
     if (this.tabs.current === 'upload') return this.uploaded;
     if (this.tabs.current === 'library') return this.gallery.selected?.img || null;
